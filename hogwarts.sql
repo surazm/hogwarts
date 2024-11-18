@@ -245,20 +245,46 @@ CREATE TABLE DuelActions (
     FOREIGN KEY (spell_id) REFERENCES Spells(spell_id)
 );
 
+CREATE TABLE PlayerProfile (
+    player_id INT PRIMARY KEY AUTO_INCREMENT, -- Unique player identifier
+    player_name VARCHAR(100), -- Name of the player
+    house VARCHAR(50), -- Assigned house (e.g., 'Gryffindor', 'Slytherin')
+    xp_lvl INT DEFAULT 0 -- XP lvl
+);
 
+INSERT INTO PlayerProfile (player_name, house, xp_lvl) VALUES
+('Harry Potter', 'Gryffindor', 3),
+('Hermione Granger', 'Gryffindor', 3),
+('Draco Malfoy', 'Slytherin', 3);
 
+CREATE TABLE PlayerInventory (
+    inventory_id INT PRIMARY KEY AUTO_INCREMENT, -- Unique inventory item ID
+    player_id INT, -- Links to PlayerProfile
+    potion_id INT, -- Links to Potions table
+    quantity INT DEFAULT 0, -- Quantity of the potion
+    FOREIGN KEY (player_id) REFERENCES PlayerProfile(player_id),
+    FOREIGN KEY (potion_id) REFERENCES Potions(potion_id)
+);
 
+INSERT INTO PlayerInventory (player_id, potion_id, quantity) VALUES
+(1, 1, 3), -- Player 1 (Harry) has 3 Healing Potions
+(1, 2, 2), -- Player 1 (Harry) has 2 Mana Elixirs
+(2, 1, 5), -- Player 2 (Hermione) has 5 Healing Potions
+(3, 2, 1); -- Player 3 (Draco) has 1 Mana Elixirs
 
+CREATE TABLE PlayerSpells (
+    player_id INT, -- Links to PlayerProfile
+    spell_id INT, -- Links to Spells table
+    spell_level INT DEFAULT 1, -- Current level of the spell
+    practice_attempts INT DEFAULT 0, -- Number of practice attempts
+    FOREIGN KEY (player_id) REFERENCES PlayerProfile(player_id),
+    FOREIGN KEY (spell_id) REFERENCES Spells(spell_id)
+);
 
-
-
-
-
-
-
-
-
-
+INSERT INTO PlayerSpells (player_id, spell_id, spell_level, practice_attempts) VALUES
+(1, 1, 3, 15), -- Harry has level 3 Expelliarmus and practiced it 15 times
+(2, 2, 4, 20), -- Hermione has level 4 Stupefy and practiced it 20 times
+(3, 4, 2, 10); -- Draco has level 2 Incendio and practiced it 10 times
 
 
 
