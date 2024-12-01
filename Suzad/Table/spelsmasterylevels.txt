@@ -1,0 +1,15 @@
+-- auto-generated definition
+create table spellmasterylevels
+(
+    spell_id      int           null,
+    mastery_level int           null,
+    success_rate  decimal(4, 3) null,
+    mana_cost     int           null,
+    effect        text          null,
+    constraint spellmasterylevels_ibfk_1
+        foreign key (spell_id) references spells (spell_id)
+);
+
+create index spell_id
+    on spellmasterylevels (spell_id);
+

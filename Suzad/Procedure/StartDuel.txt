@@ -1,0 +1,17 @@
+create
+    definer = admin@`%` procedure StartDuel(IN player1_id int, IN player2_id int, OUT duel_id int,
+                                            OUT result_message varchar(255))
+BEGIN
+    -- Insert a new duel record
+    INSERT INTO Duel (player1_id, player2_id)
+    VALUES (player1_id, player2_id);
+
+    -- Get the created duel ID
+    SET duel_id = LAST_INSERT_ID()+1;
+
+    -- Fetch player names
+    SET result_message = CONCAT(
+        'Duel started! Player ', player1_id, ' vs Player ', player2_id, '. Duel ID: ', duel_id
+    );
+END;
+

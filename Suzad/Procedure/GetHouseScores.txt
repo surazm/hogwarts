@@ -1,0 +1,23 @@
+create
+    definer = admin@`%` procedure GetHouseScores(IN player_answer varchar(255), OUT winning_house varchar(255),
+                                                 OUT gryffindor_score int, OUT slytherin_score int,
+                                                 OUT ravenclaw_score int, OUT hufflepuff_score int)
+BEGIN
+    -- Example logic for house scores
+    SET gryffindor_score = 30;
+    SET slytherin_score = 15;
+    SET ravenclaw_score = 15;
+    SET hufflepuff_score = 20;
+
+    -- Determine the winning house
+    IF gryffindor_score >= slytherin_score AND gryffindor_score >= ravenclaw_score AND gryffindor_score >= hufflepuff_score THEN
+        SET winning_house = 'Gryffindor';
+    ELSEIF slytherin_score >= ravenclaw_score AND slytherin_score >= hufflepuff_score THEN
+        SET winning_house = 'Slytherin';
+    ELSEIF ravenclaw_score >= hufflepuff_score THEN
+        SET winning_house = 'Ravenclaw';
+    ELSE
+        SET winning_house = 'Hufflepuff';
+    END IF;
+END;
+

@@ -1,0 +1,62 @@
+create
+    definer = admin@`%` procedure LearnOrPracticeSpell(IN player_id_input int, IN spell_id_input int,
+                                                       IN pronunciation_success tinyint(1),
+                                                       IN wand_movement_success tinyint(1),
+                                                       OUT result_message varchar(255))
+BEGIN
+    DECLARE spell_exists INT;
+    DECLARE current_practice_attempts INT;
+    DECLARE current_spell_level INT;
+    DECLARE max_spell_level INT;
+
+    -- Check if the spell already exists for the player
+    SELECT COUNT(*) INTO spell_exists
+    FROM PlayerSpells
+    WHERE player_id = player_id_input AND spell_id = spell_id_input;
+
+    -- Fetch the maximum spell level for this spell
+    SELECT MAX(mastery_level) INTO max_spell_level
+    FROM SpellMasteryLevels
+    WHERE spell_id = spell_id_input;
+
+    -- Validate success in both challenges
+    IF pronunciation_success = TRUE AND wand_movement_success = TRUE THEN
+        IF spell_exists = 0 THEN
+            -- If the spell is not yet learnt, add it
+            INSERT INTO PlayerSpells (player_id, spell_id, spell_level, practice_attempts)
+            VALUES (player_id_input, spell_id_input, 1, 1);
+
+            SET result_message = 'The spell has been successfully added for this player with 1 practice attempt.';
+        ELSE
+            -- If the spell already exists, increment practice_attempts
+            SELECT practice_attempts INTO current_practice_attempts
+            FROM PlayerSpells
+            WHERE player_id = player_id_input AND spell_id = spell_id_input
+            LIMIT 1;
+
+            SET current_practice_attempts = current_practice_attempts + 1;
+
+            -- Calculate the spell level based on practice_attempts
+            SET current_spell_level = FLOOR(current_practice_attempts / 5);
+
+            -- Ensure the spell level does not exceed the maximum allowed level
+            IF current_spell_level > max_spell_level THEN
+                SET current_spell_level = max_spell_level;
+            END IF;
+
+            -- Update the PlayerSpells table
+            UPDATE PlayerSpells
+            SET practice_attempts = current_practice_attempts, spell_level = current_spell_level
+            WHERE player_id = player_id_input AND spell_id = spell_id_input;
+
+            -- Feedback message
+            SET result_message = CONCAT(
+                'Practice successful! Current spell level: ', current_spell_level,
+                ', Total practice attempts: ', current_practice_attempts, '.'
+            );
+        END IF;
+    ELSE
+        SET result_message = 'Practice failed! Try again.';
+    END IF;
+END;
+

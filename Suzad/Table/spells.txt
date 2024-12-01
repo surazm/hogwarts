@@ -1,0 +1,11 @@
+-- auto-generated definition
+create table spells
+(
+    spell_id         int          not null
+        primary key,
+    spell_name       varchar(100) null,
+    effect           text         null,
+    mana_cost        int          null,
+    difficulty_level int          null
+);
+

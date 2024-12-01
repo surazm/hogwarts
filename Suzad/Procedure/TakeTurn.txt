@@ -1,0 +1,156 @@
+create
+    definer = admin@`%` procedure TakeTurn(IN INCOMING_duel_id int, IN acting_player_id int, IN action_type varchar(50),
+                                           IN spell_name varchar(100), IN potion_name varchar(100),
+                                           OUT result_message varchar(255))
+BEGIN
+    DECLARE player1_id INT;
+    DECLARE player2_id INT;
+    DECLARE player1_health INT;
+    DECLARE player2_health INT;
+    DECLARE player1_mana INT;
+    DECLARE player2_mana INT;
+    DECLARE last_turn_by VARCHAR(50);
+    DECLARE damage INT;
+    DECLARE mana_cost INT;
+    DECLARE effect TEXT;
+    DECLARE potion_effect TEXT;
+    DECLARE potion_side_effect TEXT;
+    DECLARE is_faulty BOOLEAN;
+    DECLARE turn_number INT;
+
+    -- Fetch current duel state
+    SELECT player1_id, player2_id, player1_health, player2_health, player1_mana, player2_mana, last_turn_by
+    INTO player1_id, player2_id, player1_health, player2_health, player1_mana, player2_mana, last_turn_by
+    FROM Duel
+    WHERE duel_id = INCOMING_duel_id
+    LIMIT 1;
+
+    -- Calculate the next turn number
+    SELECT COUNT(*) + 1 INTO turn_number
+    FROM DuelActions
+    WHERE duel_id = INCOMING_duel_id;
+
+    -- Ensure duel ID is valid
+    IF player1_id IS NULL OR player2_id IS NULL THEN
+        SET result_message = 'Duel not found!';
+    END IF;
+
+    -- Ensure it's the correct player's turn
+    IF (acting_player_id = player1_id AND last_turn_by = 'player') OR
+       (acting_player_id = player2_id AND last_turn_by = 'opponent') THEN
+        SET result_message = 'Not your turn!';
+    END IF;
+
+    -- Action: Skip Turn
+    IF action_type = 'skip' THEN
+        IF acting_player_id = player1_id THEN
+            UPDATE Duel SET last_turn_by = 'opponent' WHERE duel_id = INCOMING_duel_id;
+        ELSE
+            UPDATE Duel SET last_turn_by = 'player' WHERE duel_id = INCOMING_duel_id;
+        END IF;
+        SET result_message = 'Turn skipped!';
+    END IF;
+
+    -- Action: Cast a Spell
+    IF action_type = 'spell' THEN
+        -- Fetch spell details
+        SELECT damage, mana_cost, effect
+        INTO damage, mana_cost, effect
+        FROM Spells
+        WHERE spell_name = spell_name
+        LIMIT 1;
+
+        -- Ensure spell exists
+        IF damage IS NULL THEN
+            SET result_message = 'Invalid spell!';
+        END IF;
+
+        -- Check mana availability
+        IF (acting_player_id = player1_id AND player1_mana < mana_cost) OR
+           (acting_player_id = player2_id AND player2_mana < mana_cost) THEN
+            SET result_message = 'Not enough mana to cast this spell!';
+        END IF;
+
+        -- Apply spell effect
+        IF acting_player_id = player1_id THEN
+            SET player2_health = GREATEST(player2_health - damage, 0);
+        ELSE
+            SET player1_health = GREATEST(player1_health - damage, 0);
+        END IF;
+
+        -- Update mana and log action
+        IF acting_player_id = player1_id THEN
+            UPDATE Duel
+            SET player1_mana = player1_mana - mana_cost,
+                player2_health = player2_health,
+                last_turn_by = 'opponent'
+            WHERE duel_id = INCOMING_duel_id;
+        ELSE
+            UPDATE Duel
+            SET player2_mana = player2_mana - mana_cost,
+                player1_health = player1_health,
+                last_turn_by = 'player'
+            WHERE duel_id = INCOMING_duel_id;
+        END IF;
+
+        INSERT INTO DuelActions (duel_id, turn_number, acting_player, action_type, damage, mana_used, result)
+        VALUES (INCOMING_duel_id, turn_number, IF(acting_player_id = player1_id, 'player', 'opponent'),
+                'spell', damage, mana_cost, 'success');
+
+        SET result_message = CONCAT('Spell cast successfully! ', effect, ' dealt ', damage, ' damage.');
+
+    END IF;
+
+    -- Action: Use a Potion
+    IF action_type = 'potion' THEN
+        -- Fetch potion details
+        SELECT effect, side_effect, is_faulty
+        INTO potion_effect, potion_side_effect, is_faulty
+        FROM Potions
+        WHERE potion_name = potion_name
+        LIMIT 1;
+
+        -- Ensure potion exists
+        IF potion_effect IS NULL THEN
+            SET result_message = 'Invalid potion!';
+
+        END IF;
+
+        IF is_faulty THEN
+            -- Apply side effect
+            SET result_message = CONCAT('Potion is faulty! Side effect: ', potion_side_effect);
+        ELSE
+            -- Apply potion effect
+            IF potion_effect LIKE '%Heals%' THEN
+                IF acting_player_id = player1_id THEN
+                    SET player1_health = LEAST(player1_health + 20, 100);
+                ELSE
+                    SET player2_health = LEAST(player2_health + 20, 100);
+                END IF;
+            ELSEIF potion_effect LIKE '%Mana%' THEN
+                IF acting_player_id = player1_id THEN
+                    SET player1_mana = LEAST(player1_mana + 20, 100);
+                ELSE
+                    SET player2_mana = LEAST(player2_mana + 20, 100);
+                END IF;
+            END IF;
+            SET result_message = CONCAT('Potion used successfully! Effect: ', potion_effect);
+        END IF;
+
+        -- Update last turn
+        IF acting_player_id = player1_id THEN
+            UPDATE Duel SET player1_health = player1_health, player1_mana = player1_mana, last_turn_by = 'opponent'
+            WHERE duel_id = INCOMING_duel_id;
+        ELSE
+            UPDATE Duel SET player2_health = player2_health, player2_mana = player2_mana, last_turn_by = 'player'
+            WHERE duel_id = INCOMING_duel_id;
+        END IF;
+
+        INSERT INTO DuelActions (duel_id, turn_number, acting_player, action_type, damage, mana_used, result)
+        VALUES (INCOMING_duel_id, turn_number, IF(acting_player_id = player1_id, 'player', 'opponent'),
+                'potion', 0, 0, IF(is_faulty, 'side effect', 'success'));
+        END IF;
+        -- Invalid action type
+        SET result_message = 'Invalid action type!';
+END;
+

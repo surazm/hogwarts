@@ -1,0 +1,12 @@
+-- auto-generated definition
+create table pronunciationchallenge
+(
+    spell_id    int          not null,
+    choice_id   int          not null,
+    choice_text varchar(100) null,
+    is_correct  tinyint(1)   null,
+    primary key (spell_id, choice_id),
+    constraint pronunciationchallenge_ibfk_1
+        foreign key (spell_id) references spells (spell_id)
+);
+

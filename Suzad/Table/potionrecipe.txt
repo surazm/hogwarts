@@ -1,0 +1,16 @@
+-- auto-generated definition
+create table potionrecipe
+(
+    potion_id        int           null,
+    step_num         int           null,
+    step_instruction text          null,
+    action_required  varchar(50)   null,
+    stir_direction   varchar(50)   null,
+    success_impact   decimal(4, 3) null,
+    constraint potionrecipe_ibfk_1
+        foreign key (potion_id) references potions (potion_id)
+);
+
+create index potion_id
+    on potionrecipe (potion_id);
+

@@ -1,0 +1,21 @@
+create
+    definer = admin@`%` procedure WandMovementChallengeProcedure(IN spell_id int, IN player_sequence text,
+                                                                 OUT result_message varchar(255))
+BEGIN
+    DECLARE correct_sequence TEXT;
+
+    -- Retrieve the correct wand movement sequence for the spell
+    SELECT GROUP_CONCAT(direction ORDER BY step_number SEPARATOR ',') INTO correct_sequence
+    FROM WandMovementChallenge
+    WHERE spell_id = spell_id;
+
+    -- Compare the player's sequence with the correct sequence
+    IF player_sequence = correct_sequence THEN
+        SET result_message = 'Correct! You performed the wand movements successfully.';
+    ELSE
+        SET result_message = CONCAT('Incorrect! The correct sequence is: ', correct_sequence);
+    END IF;
+
+    SELECT CONCAT(result_message) AS success_message;
+END;
+

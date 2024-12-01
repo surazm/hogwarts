@@ -1,0 +1,48 @@
+create
+    definer = admin@`%` procedure SortingHatCeremony(IN playerId int, IN answer_text varchar(255),
+                                                     OUT winning_house varchar(255), OUT gryffindor_score int,
+                                                     OUT slytherin_score int, OUT ravenclaw_score int,
+                                                     OUT hufflepuff_score int)
+BEGIN
+    DECLARE total_score INT;
+
+    -- Match the input answer_text with SortingAnswers and fetch scores
+    SELECT
+        IFNULL(SUM(sa.gryffindor_points), 0),
+        IFNULL(SUM(sa.slytherin_points), 0),
+        IFNULL(SUM(sa.ravenclaw_points), 0),
+        IFNULL(SUM(sa.hufflepuff_points), 0)
+    INTO
+        gryffindor_score,
+        slytherin_score,
+        ravenclaw_score,
+        hufflepuff_score
+    FROM SortingAnswers sa
+    WHERE sa.answer_text = answer_text;
+
+    -- Calculate the total score
+    SET total_score = gryffindor_score + slytherin_score + ravenclaw_score + hufflepuff_score;
+
+    -- Determine the winning house
+    IF total_score = 0 THEN
+        SET winning_house = 'Invalid answer';
+    ELSE
+        IF gryffindor_score >= slytherin_score AND gryffindor_score >= ravenclaw_score AND gryffindor_score >= hufflepuff_score THEN
+            SET winning_house = 'Gryffindor';
+        ELSEIF slytherin_score >= gryffindor_score AND slytherin_score >= ravenclaw_score AND slytherin_score >= hufflepuff_score THEN
+            SET winning_house = 'Slytherin';
+        ELSEIF ravenclaw_score >= gryffindor_score AND ravenclaw_score >= slytherin_score AND ravenclaw_score >= hufflepuff_score THEN
+            SET winning_house = 'Ravenclaw';
+        ELSE
+            SET winning_house = 'Hufflepuff';
+        END IF;
+    END IF;
+
+    -- Update the player's house in the playerprofile table
+    IF total_score > 0 THEN
+        UPDATE playerprofile pp
+        SET house = winning_house
+        WHERE pp.player_id = playerId;
+    END IF;
+END;
+

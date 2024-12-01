@@ -1,0 +1,12 @@
+-- auto-generated definition
+create table potions
+(
+    potion_id         int           not null
+        primary key,
+    potion_name       varchar(100)  null,
+    difficulty_lvl    int           null,
+    base_success_rate decimal(4, 3) null,
+    effect            text          null,
+    side_effect       text          null
+);
+

@@ -1,0 +1,13 @@
+-- auto-generated definition
+create table wandmovementchallenge
+(
+    spell_id    int         null,
+    step_number int         null,
+    direction   varchar(50) null,
+    constraint wandmovementchallenge_ibfk_1
+        foreign key (spell_id) references spells (spell_id)
+);
+
+create index spell_id
+    on wandmovementchallenge (spell_id);
+

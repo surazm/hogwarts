@@ -1,0 +1,8 @@
+create
+    definer = admin@`%` procedure GetSortingQuestion()
+BEGIN
+    SELECT question_id, question_text
+    FROM sortingquestions
+    LIMIT 1; -- If you only want the first question, otherwise remove LIMIT
+END;
+

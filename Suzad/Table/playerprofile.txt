@@ -1,0 +1,10 @@
+-- auto-generated definition
+create table playerprofile
+(
+    player_id   int auto_increment
+        primary key,
+    player_name varchar(100)  null,
+    house       varchar(50)   null,
+    xp_lvl      int default 0 null
+);
+

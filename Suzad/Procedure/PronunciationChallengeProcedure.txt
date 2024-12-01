@@ -1,0 +1,24 @@
+create
+    definer = admin@`%` procedure PronunciationChallengeProcedure(IN player_id int, IN spell_id int,
+                                                                  IN player_choice varchar(100),
+                                                                  OUT result_message varchar(100))
+BEGIN
+    DECLARE correct_answer VARCHAR(100);
+
+    -- Get the correct pronunciation for the given spell
+    SELECT choice_text INTO correct_answer
+    FROM PronunciationChallenge
+    WHERE spell_id = spell_id AND is_correct = 1
+    LIMIT 1;
+
+    -- Compare player's choice with the correct answer
+    IF player_choice = correct_answer THEN
+        SET result_message = 'Correct! You pronounced the spell properly.';
+    ELSE
+        SET result_message = 'Incorrect! Try practicing the pronunciation again.';
+    END IF;
+
+    SELECT CONCAT(result_message) AS success_message;
+
+END;
+

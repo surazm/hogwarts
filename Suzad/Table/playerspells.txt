@@ -1,0 +1,19 @@
+-- auto-generated definition
+create table playerspells
+(
+    player_id         int           null,
+    spell_id          int           null,
+    spell_level       int default 1 null,
+    practice_attempts int default 0 null,
+    constraint playerspells_ibfk_1
+        foreign key (player_id) references playerprofile (player_id),
+    constraint playerspells_ibfk_2
+        foreign key (spell_id) references spells (spell_id)
+);
+
+create index player_id
+    on playerspells (player_id);
+
+create index spell_id
+    on playerspells (spell_id);
+

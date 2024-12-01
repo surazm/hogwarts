@@ -1,0 +1,76 @@
+create
+    definer = admin@`%` procedure ValidateAndAddPotionToInventory(IN playerId int, IN potionId int, IN stirInputs text,
+                                                                  IN actionInputs text)
+BEGIN
+    DECLARE step_count INT;
+    DECLARE correct_stir_direction VARCHAR(255);
+    DECLARE correct_action_required VARCHAR(255);
+    DECLARE success_status INT DEFAULT 1; -- Default to success
+    DECLARE stir_input VARCHAR(255);
+    DECLARE action_input VARCHAR(255);
+    DECLARE idx INT DEFAULT 1; -- Step index for processing
+    DECLARE potion_exists INT DEFAULT 0; -- Check if potion exists in inventory
+
+    -- Step 1: Count the total steps for the potion
+    SELECT COUNT(*) INTO step_count
+    FROM PotionRecipe
+    WHERE potion_id = potionId;
+
+    -- Step 2: Process each step of the potion
+    potion_creation_loop: LOOP
+        IF idx > step_count THEN
+            LEAVE potion_creation_loop; -- Exit loop when all steps are processed
+        END IF;
+
+        -- Fetch the required stir direction and action for the current step
+        SELECT stir_direction, action_required
+        INTO correct_stir_direction, correct_action_required
+        FROM PotionRecipe
+        WHERE potion_id = potionId AND step_num = idx
+        LIMIT 1;
+
+        -- Extract the player's input for the current step
+        SET stir_input = TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(stirInputs, ',', idx), ',', -1));
+        SET action_input = TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(actionInputs, ',', idx), ',', -1));
+
+        -- Compare player's inputs with the required values
+        IF stir_input != correct_stir_direction OR action_input != correct_action_required THEN
+            -- If input doesn't match, mark as unsuccessful
+            SET success_status = 0; -- Mark as unsuccessful
+            LEAVE potion_creation_loop; -- Exit loop on failure
+        END IF;
+
+        -- Move to the next step
+        SET idx = idx + 1;
+    END LOOP;
+
+    -- Step 3: Check if the potion already exists in the player's inventory
+    SELECT COUNT(*) INTO potion_exists
+    FROM PlayerInventory
+    WHERE player_id = playerId AND potion_id = potionId;
+
+    -- Step 4: Update or insert the potion into the player's inventory
+    IF potion_exists > 0 THEN
+        -- Update existing potion entry
+        IF success_status!=0 THEN
+        UPDATE PlayerInventory
+        SET quantity = quantity + 1,
+            Success_Status = success_status
+        WHERE player_id = playerId AND potion_id = potionId;
+        END IF;
+    ELSE
+        -- Insert new potion entry
+        IF success_status!=0 THEN
+        INSERT INTO PlayerInventory (player_id, potion_id, quantity, Success_Status)
+        VALUES (playerId, potionId, 1, success_status);
+        END IF;
+    END IF;
+
+    -- Optional: Return a message or result set to indicate the success status
+    SELECT
+        playerId AS Player_ID,
+        potionId AS Potion_ID,
+        success_status AS Success_Status;
+
+END;
+

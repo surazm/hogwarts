@@ -1,0 +1,25 @@
+-- auto-generated definition
+create table duelactions
+(
+    action_id     int auto_increment
+        primary key,
+    duel_id       int          null,
+    turn_number   int          null,
+    acting_player varchar(50)  null,
+    action_type   varchar(50)  null,
+    spell_id      int          null,
+    damage        int          null,
+    mana_used     int          null,
+    result        varchar(100) null,
+    constraint duelactions_ibfk_1
+        foreign key (duel_id) references duel (duel_id),
+    constraint duelactions_ibfk_2
+        foreign key (spell_id) references spells (spell_id)
+);
+
+create index duel_id
+    on duelactions (duel_id);
+
+create index spell_id
+    on duelactions (spell_id);
+
